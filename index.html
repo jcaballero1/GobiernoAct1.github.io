@@ -10,8 +10,21 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- End Google Tag Manager -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Culebrita</title>
+<title>Culebrita - Ranking de Jugadores</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐍</text></svg>">
+
+<!-- Open Graph / vista previa al compartir (WhatsApp, Facebook, etc.) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Culebrita — Ranking de Jugadores">
+<meta property="og:description" content="Juega la culebrita, suma puntos y compite en el ranking. Actividad 1: Google Analytics - UNIR.">
+<meta property="og:image" content="https://jcaballero1.github.io/GobiernoAct1.github.io/og-image.png">
+<meta property="og:url" content="https://jcaballero1.github.io/GobiernoAct1.github.io/">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Culebrita — Ranking de Jugadores">
+<meta name="twitter:description" content="Juega la culebrita, suma puntos y compite en el ranking.">
+<meta name="twitter:image" content="https://jcaballero1.github.io/GobiernoAct1.github.io/og-image.png">
 
 <!-- ===================== FIREBASE SDK (compat) ===================== -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -270,6 +283,68 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   @media (hover: none) and (pointer: coarse) {
     #controls { display: grid; }
   }
+
+  /* ---------- Splash / pantalla de bienvenida ---------- */
+  #splash {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background:
+      radial-gradient(circle at 15% 0%, #14203a 0%, transparent 40%),
+      radial-gradient(circle at 85% 100%, #0e2a2c 0%, transparent 45%),
+      var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+  }
+  #splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+
+  .splash-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    animation: splashPop 0.5s ease;
+  }
+  @keyframes splashPop {
+    from { opacity: 0; transform: translateY(12px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .splash-board { border-radius: 18px; filter: drop-shadow(0 0 24px rgba(45,212,191,0.15)); }
+
+  #splashFood {
+    animation: splashFoodPulse 1s ease-in-out infinite;
+  }
+  @keyframes splashFoodPulse {
+    0%, 100% { r: 8; opacity: 1; }
+    50% { r: 6; opacity: 0.6; }
+  }
+
+  .splash-card h1 { margin: 18px 0 2px; font-size: 1.6rem; }
+  .splash-card p { margin: 0; color: var(--text-dim); font-size: 0.95rem; }
+  .splash-card p b { color: var(--accent); }
+
+  .splash-bar {
+    width: 160px;
+    height: 5px;
+    border-radius: 3px;
+    background: #1b2338;
+    margin-top: 18px;
+    overflow: hidden;
+  }
+  .splash-bar-fill {
+    width: 40%;
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    animation: splashBar 1.1s ease-in-out infinite;
+  }
+  @keyframes splashBar {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
+  }
 </style>
 </head>
 <body>
@@ -277,6 +352,23 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PMJH4TLQ"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
+
+<!-- ================= PANTALLA DE BIENVENIDA / CARGA ================= -->
+<div id="splash">
+  <div class="splash-card">
+    <svg class="splash-board" viewBox="0 0 220 220" width="220" height="220">
+      <!-- tablero de fondo -->
+      <rect x="4" y="4" width="212" height="212" rx="18" fill="#0f1524" stroke="#232c42" stroke-width="2"/>
+      <!-- comida -->
+      <circle id="splashFood" cx="170" cy="60" r="8" fill="#f87171"/>
+      <!-- cuerpo de la culebrita (segmentos), la cabeza se anima con SMIL a lo largo de un path -->
+      <g id="splashSnake"></g>
+    </svg>
+    <h1>Bienvenido</h1>
+    <p>al ranking de <b>Culebrita</b></p>
+    <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+  </div>
+</div>
 
 <header>
   <div class="brand"><span class="icon">🐍</span> Culebrita — Ranking de Jugadores</div>
@@ -774,6 +866,79 @@ function initGameIfNeeded() {
   food = { x: 5, y: 5 };
   draw();
 }
+</script>
+
+<!-- =====================================================================
+     PANTALLA DE BIENVENIDA: culebrita animada moviéndose por el tablero
+===================================================================== */ -->
+<script>
+(function () {
+  const svgGroup = document.getElementById('splashSnake');
+  const CELL = 20;       // tamaño de celda en el tablero de 220x220 (11x11)
+  const COLS = 11, ROWS = 11;
+  const SNAKE_LEN = 6;
+
+  // Ruta cerrada (loop) en espiral rectangular para que la culebrita "recorra" el tablero
+  function buildLoopPath() {
+    const path = [];
+    let top = 1, bottom = ROWS - 2, left = 1, right = COLS - 2;
+    while (left <= right && top <= bottom) {
+      for (let x = left; x <= right; x++) path.push({ x, y: top });
+      for (let y = top + 1; y <= bottom; y++) path.push({ x: right, y });
+      if (top < bottom) {
+        for (let x = right - 1; x >= left; x--) path.push({ x, y: bottom });
+      }
+      if (left < right) {
+        for (let y = bottom - 1; y > top; y--) path.push({ x: left, y });
+      }
+      top++; bottom--; left++; right--;
+    }
+    return path;
+  }
+
+  const loop = buildLoopPath();
+  let step = 0;
+
+  function render() {
+    svgGroup.innerHTML = '';
+    for (let i = 0; i < SNAKE_LEN; i++) {
+      const idx = (step - i + loop.length * 10) % loop.length;
+      const cell = loop[idx];
+      if (!cell) continue;
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', cell.x * CELL + 1);
+      rect.setAttribute('y', cell.y * CELL + 1);
+      rect.setAttribute('width', CELL - 2);
+      rect.setAttribute('height', CELL - 2);
+      rect.setAttribute('rx', 4);
+      rect.setAttribute('fill', i === 0 ? '#2dd4bf' : '#0e9488');
+      svgGroup.appendChild(rect);
+    }
+    step++;
+  }
+
+  render();
+  const splashInterval = setInterval(render, 110);
+
+  function hideSplash() {
+    clearInterval(splashInterval);
+    const splash = document.getElementById('splash');
+    if (splash) {
+      splash.classList.add('hide');
+      setTimeout(() => splash.remove(), 600);
+    }
+  }
+
+  // Muestra la animación un tiempo mínimo (para que se aprecie) y hasta que la página cargue
+  const minTime = new Promise(resolve => setTimeout(resolve, 1600));
+  const pageLoaded = new Promise(resolve => {
+    if (document.readyState === 'complete') resolve();
+    else window.addEventListener('load', resolve);
+  });
+  Promise.all([minTime, pageLoaded]).then(hideSplash);
+  // Salvaguarda: nunca dejar la pantalla más de 5s por si algo tarda en cargar
+  setTimeout(hideSplash, 5000);
+})();
 </script>
 </body>
 </html>
