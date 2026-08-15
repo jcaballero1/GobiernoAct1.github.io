@@ -238,6 +238,57 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .game-header .stats { display: flex; gap: 16px; font-size: 0.85rem; color: var(--text-dim); }
   .game-header .stats b { color: var(--accent); }
+
+  /* ---------- Selector de dificultad ---------- */
+  .difficulty-selector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+  }
+  .difficulty-label {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .difficulty-options {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+  }
+  .diff-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  }
+  .diff-btn .diff-icon { font-size: 1rem; }
+  .diff-btn:hover { border-color: #3a4463; color: var(--text); }
+  .diff-btn.active {
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    color: #06231f;
+    border-color: transparent;
+  }
+  .diff-btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+  @media (max-width: 480px) {
+    .difficulty-selector { flex-direction: column; align-items: stretch; }
+  }
   #gameCanvas {
     width: 100%;
     display: block;
@@ -483,6 +534,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         &nbsp;|&nbsp; Partidas jugadas: <b id="myGames">0</b>
       </div>
     </div>
+    <div class="difficulty-selector" id="difficultySelector">
+      <span class="difficulty-label">Dificultad:</span>
+      <div class="difficulty-options">
+        <button class="diff-btn" data-diff="easy">
+          <span class="diff-icon">🐢</span> Fácil
+        </button>
+        <button class="diff-btn active" data-diff="normal">
+          <span class="diff-icon">🐍</span> Normal
+        </button>
+        <button class="diff-btn" data-diff="hard">
+          <span class="diff-icon">⚡</span> Difícil
+        </button>
+      </div>
+    </div>
     <canvas id="gameCanvas"></canvas>
     <div id="gameMessage"></div>
     <button id="btnStartGame">Iniciar juego</button>
@@ -710,9 +775,23 @@ function initGameIfNeeded() {
   const liveScoreEl = document.getElementById('liveScore');
   const gameMessageEl = document.getElementById('gameMessage');
   const btnStartGame = document.getElementById('btnStartGame');
+  const diffButtons = document.querySelectorAll('.diff-btn');
 
   const GRID_SIZE = 20;
   let cols, rows, snake, direction, nextDirection, food, score, gameRunning, gameLoop, speed;
+
+  // Velocidades base (ms entre movimientos) según dificultad
+  const DIFFICULTY_SPEEDS = { easy: 170, normal: 130, hard: 95 };
+  const DIFFICULTY_MIN_SPEED = { easy: 100, normal: 60, hard: 45 };
+  let difficulty = 'normal';
+
+  diffButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (gameRunning) return; // no cambiar dificultad a mitad de partida
+      difficulty = btn.dataset.diff;
+      diffButtons.forEach(b => b.classList.toggle('active', b === btn));
+    });
+  });
 
   function resizeCanvas() {
     const wrapperWidth = canvas.parentElement.clientWidth;
@@ -730,7 +809,7 @@ function initGameIfNeeded() {
     direction = { x: 0, y: 0 };
     nextDirection = { x: 0, y: 0 };
     score = 0;
-    speed = 130;
+    speed = DIFFICULTY_SPEEDS[difficulty];
     liveScoreEl.textContent = score;
     placeFood();
     draw();
@@ -778,7 +857,7 @@ function initGameIfNeeded() {
       score++;
       liveScoreEl.textContent = score;
       placeFood();
-      if (score % 5 === 0 && speed > 60) {
+      if (score % 5 === 0 && speed > DIFFICULTY_MIN_SPEED[difficulty]) {
         speed -= 8;
         clearInterval(gameLoop);
         gameLoop = setInterval(update, speed);
@@ -792,6 +871,7 @@ function initGameIfNeeded() {
   async function endGame() {
     clearInterval(gameLoop);
     gameRunning = false;
+    diffButtons.forEach(b => b.disabled = false);
     gameMessageEl.textContent = `Juego terminado. Puntuación: ${score}`;
     btnStartGame.textContent = 'Jugar de nuevo';
     btnStartGame.style.display = 'inline-block';
@@ -819,6 +899,7 @@ function initGameIfNeeded() {
     gameRunning = true;
     gameMessageEl.textContent = '';
     btnStartGame.style.display = 'none';
+    diffButtons.forEach(b => b.disabled = true);
     clearInterval(gameLoop);
     gameLoop = setInterval(update, speed);
   }
