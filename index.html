@@ -416,7 +416,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <g id="splashSnake"></g>
     </svg>
     <h1>Bienvenido</h1>
-    <p>al ranking de <b>Culebrita</b></p>
+    <p>al juego de <b>Culebrita</b></p>
     <div class="splash-bar"><div class="splash-bar-fill"></div></div>
   </div>
 </div>
@@ -781,7 +781,7 @@ function initGameIfNeeded() {
   let cols, rows, snake, direction, nextDirection, food, score, gameRunning, gameLoop, speed;
 
   // Velocidades base (ms entre movimientos) según dificultad
-  const DIFFICULTY_SPEEDS = { easy: 170, normal: 130, hard: 95 };
+  const DIFFICULTY_SPEEDS = { easy: 200, normal: 130, hard: 95 };
   const DIFFICULTY_MIN_SPEED = { easy: 100, normal: 60, hard: 45 };
   let difficulty = 'normal';
 
